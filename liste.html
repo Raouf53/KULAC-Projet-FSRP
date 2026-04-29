@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détails du Dossier</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="flex justify-between items-center mb-8">
+            <h1 id="titrePage" class="text-3xl font-bold text-gray-800">Chargement...</h1>
+            <a href="index.html" class="bg-gray-500 text-white px-4 py-2 rounded">Retour</a>
+        </header>
+
+        <div id="listeDocuments" class="grid gap-4">
+            </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        // Ta configuration Firebase ici
+        const firebaseConfig = {
+            apiKey: "AIzaSyBYV5ppOVucQ-A6jS7hFrjBLMHIaIjH93w",
+            authDomain: "kulac-archive-fsrp.firebaseapp.com",
+            projectId: "kulac-archive-fsrp",
+            storageBucket: "kulac-archive-fsrp.firebasestorage.app",
+            messagingSenderId: "272670007395",
+            appId: "1:272670007395:web:d46a8770d9955d771d5856",
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // 1. Récupérer la catégorie dans l'URL
+        const params = new URLSearchParams(window.location.search);
+        const categorieCible = params.get('cat');
+        document.getElementById('titrePage').innerText = categorieCible;
+
+        // 2. Charger les documents filtrés
+        async function chargerDossier() {
+            const container = document.getElementById('listeDocuments');
+            try {
+                const q = query(collection(db, "archives"), where("categorie", "==", categorieCible));
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    container.innerHTML = "<p class='text-gray-500'>Aucun document trouvé pour la catégorie : " + categorieCible + "</p>";
+                    document.getElementById('titrePage').innerText = categorieCible;
+                    return;
+                }
+
+                document.getElementById('titrePage').innerText = categorieCible;
+                container.innerHTML = ""; // Vide le message de chargement
+                
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    container.innerHTML += `
+                        <div class="bg-white p-4 rounded shadow flex justify-between items-center mb-4">
+                            <div>
+                                <p class="font-bold text-lg">${data.nomDocument}</p>
+                                <p class="text-sm text-gray-500 italic">Ajouté le : ${data.dateCreation?.toDate().toLocaleDateString() || 'Date inconnue'}</p>
+                            </div>
+                            <a href="${data.fileUrl}" target="_blank" class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Visualiser</a>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Erreur détaillée :", error);
+                container.innerHTML = "<p class='text-red-500'>Erreur de chargement : " + error.message + "</p>";
+            }
+        }
+                chargerDossier();
+    </script>
+</body>
+</html>
